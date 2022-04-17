@@ -23,6 +23,27 @@ unsafe impl ReplaceDropImpl for () {
 }
 
 /// A wrapper around ManuallyDrop that instead of removing the drop, replaces it
+/// Example:
+/// ```
+/// use replace_drop::{ReplaceDropImpl, ReplaceDrop};
+/// struct MyData { data: i32 }
+/// unsafe impl ReplaceDropImpl for MyData {
+///     unsafe fn drop(&mut self) {
+///         println!("Called drop with {}", self.data)
+///     }    
+/// }
+///
+/// # fn main() {
+/// let data = MyData {data: 3};
+/// let data2 = MyData {data: 3};
+
+/// drop(data); // Prints nothing
+/// let data_replace_drop = ReplaceDrop::new(data2);
+/// drop(data_replace_drop); // Prints "Called drop with 3"
+
+/// # }
+
+/// ```
 #[derive(Clone, Debug)]
 pub struct ReplaceDrop<T: ReplaceDropImpl>(ManuallyDrop<T>);
 
@@ -66,6 +87,26 @@ impl<T: ReplaceDropImpl> DerefMut for ReplaceDrop<T> {
     }
 }
 
+/// Works like drop(val) but uses the ReplaceDropImpl
+/// Example:
+/// ```
+/// use replace_drop::{ReplaceDropImpl, replace_drop};
+/// struct MyData { data: i32 }
+/// unsafe impl ReplaceDropImpl for MyData {
+///     unsafe fn drop(&mut self) {
+///         println!("Called replace_drop with {}", self.data)
+///     }    
+/// }
+///
+/// # fn main() {
+/// let data = MyData {data: 3};
+/// let data2 = MyData {data: 3};
+
+/// drop(data); // Prints nothing
+/// replace_drop(data2); // Prints "Called replace_drop with 3"
+
+/// # }
+/// ```
 pub fn replace_drop<T: ReplaceDropImpl>(val: T) {
     let _ = ReplaceDrop::new(val);
 }
