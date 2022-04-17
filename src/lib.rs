@@ -27,10 +27,12 @@ unsafe impl ReplaceDropImpl for () {
 pub struct ReplaceDrop<T: ReplaceDropImpl>(ManuallyDrop<T>);
 
 impl<T: ReplaceDropImpl> ReplaceDrop<T> {
+    #[must_use = "use `replace_drop::replace_drop` to clarify the intent: replace_drop(val);"]
     pub fn new(val: T) -> Self {
         ReplaceDrop(ManuallyDrop::new(val))
     }
 
+    #[must_use = "use `replace_drop::replace_drop` to clarify the intent: replace_drop(val);"]
     pub fn new_from_manually_drop(val: ManuallyDrop<T>) -> Self {
         ReplaceDrop(val)
     }
@@ -64,6 +66,10 @@ impl<T: ReplaceDropImpl> DerefMut for ReplaceDrop<T> {
     }
 }
 
+pub fn replace_drop<T: ReplaceDropImpl>(val: T) {
+    let _ = ReplaceDrop::new(val);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -84,14 +90,15 @@ mod tests {
         }
 
         let mut t = 0;
-        let thing = MyType(&mut t);
 
-        drop(thing);
+        drop(ReplaceDrop::new(MyType(&mut t)));
+        assert_eq!(t, 5);
+
+        drop(MyType(&mut t));
+
         assert_eq!(t, 1);
 
-        let thing2 = ReplaceDrop::new(MyType(&mut t));
-
-        drop(thing2);
+        replace_drop(MyType(&mut t));
 
         assert_eq!(t, 5);
     }
